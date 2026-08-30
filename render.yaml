@@ -1,0 +1,18 @@
+# Render blueprint: deploys the API over HTTPS with a managed certificate.
+# Secrets are set in the Render dashboard, never in this file.
+services:
+  - type: web
+    name: linkedin-profile-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8080
+      # sync: false means "prompt me in the dashboard", so the value is
+      # never stored in the repository.
+      - key: LINKEDIN_LI_AT
+        sync: false
+      - key: LINKEDIN_JSESSIONID
+        sync: false

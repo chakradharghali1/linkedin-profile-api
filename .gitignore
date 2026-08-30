@@ -1,0 +1,15 @@
+# Secrets — never commit
+.env
+.env.local
+
+# Build output
+bin/
+dist/
+linkedin-profile-api
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+*.log
