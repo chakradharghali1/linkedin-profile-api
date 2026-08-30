@@ -26,6 +26,7 @@ type cacheEntry struct {
 	expiresAt time.Time
 }
 
+// NewCache returns a cache that holds entries for ttl.
 func NewCache(ttl time.Duration) *Cache {
 	return &Cache{
 		ttl:     ttl,
