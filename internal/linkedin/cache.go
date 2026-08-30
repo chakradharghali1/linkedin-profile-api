@@ -6,14 +6,19 @@ import (
 )
 
 /*
-Cache stores fetched profiles for a short period.
+Cache stores fetched profiles for the configured TTL.
 
 LinkedIn allows very few automated requests before blocking a session, so the
 cheapest request is the one never sent. Repeated lookups of the same profile
 (a demo, a page refresh, a retry) are served from memory.
 
+The TTL is deliberately long — hours, not minutes. A session survives only a
+few requests, so a cached profile routinely outlives the cookie that fetched
+it, and serving it is the difference between a response and a 429.
+
 It is intentionally in-process: there is no external dependency to run, which
-keeps deployment to a single container.
+keeps deployment to a single container. The trade-off is that the cache does
+not survive a restart.
 */
 type Cache struct {
 	mu      sync.RWMutex

@@ -175,8 +175,10 @@ Any section not fetched from its own endpoint is listed in
 be truncated at ~20 entries. An unknown section name is a `400` rather than a
 silent omission.
 
-Successful responses are cached in memory for 15 minutes and report
-`X-Cache: HIT` or `MISS`. A repeated lookup costs no upstream request at all.
+Successful responses are cached in memory (`CACHE_TTL`, default `6h`) and
+report `X-Cache: HIT` or `MISS`. A repeated lookup costs no upstream request
+at all, so a profile fetched while the session was alive keeps being served
+after the cookie dies.
 
 Accepted input shapes:
 
@@ -194,8 +196,13 @@ A path form is also supported for convenience:
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /health` | Liveness probe |
-| `GET /` | Self-describing index |
+| `GET /health` | Liveness probe. Does not contact LinkedIn |
+| `GET /` | Self-describing index: parameters, status codes, and the behaviour notes |
+
+`GET /` negotiates on `Accept`. A browser gets a small styled page; `curl`
+and API clients get the same content as JSON. The page is embedded in the
+binary, so the runtime image stays a single static file with nothing to serve
+from disk.
 
 ### Status codes
 
@@ -309,7 +316,8 @@ session was alive keeps being served long after the cookie has died.
 
 ## Setup
 
-Requires Go 1.24+.
+Requires Go 1.26+ (the version in `go.mod`). Docker builds need nothing
+installed locally.
 
 ```bash
 git clone https://github.com/chakradharghali1/linkedin-profile-api.git

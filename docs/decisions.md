@@ -156,7 +156,13 @@ returning a profile without the requested data.
 ## D-007: Cache in process
 
 **Decision.** In-memory cache keyed by public identifier plus the requested
-sections, 15-minute TTL.
+sections. TTL is set by `CACHE_TTL`, defaulting to 6 hours and set to 24
+hours in the Render blueprint.
+
+**Why so long.** A session survives only two or three requests, so a fetched
+profile routinely outlives the cookie that fetched it. An earlier 15-minute
+TTL discarded that work and left the API returning 429 for a profile it had
+already read successfully.
 
 **Why.** The cheapest request is the one never sent. A demo, a page refresh
 or a retry costs nothing, and results keep being served after the session

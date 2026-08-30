@@ -156,8 +156,13 @@ func buildProfile(envelope *normalizedResponse, publicID string) (*Profile, erro
 	profile.Experience = parseExperience(g, envelope.Included)
 	profile.Education = parseEducation(g, envelope.Included)
 
-	// These are usually empty stubs that attachSubResources fills in, but
-	// read them here in case LinkedIn did inline them.
+	/*
+		How much of these LinkedIn inlines depends on the viewer. For the
+		authenticated member's own profile they arrive populated (though
+		capped at roughly 20 entries); for an unconnected member they can be
+		empty stubs holding only a pointer. Read whatever is here, and let
+		attachSubResources fetch the complete list when asked.
+	*/
 	profile.Skills = parseSkills(g.collection(root, "profileSkills"))
 	profile.Certifications = parseCertifications(g.collection(root, "profileCertifications"))
 	profile.Languages = parseLanguages(g.collection(root, "profileLanguages"))

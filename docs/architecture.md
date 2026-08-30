@@ -32,6 +32,11 @@ spend as few as possible:
 
 A default lookup costs exactly **one** request.
 
+The cache TTL (`CACHE_TTL`, 6 hours by default and 24 in the deployed
+blueprint) is long for the same reason: a profile fetched while the session
+was alive routinely outlives the cookie that fetched it, and serving it is
+the difference between a working response and a 429.
+
 ---
 
 ## Request flow
@@ -83,7 +88,7 @@ GET /api/v1/profile?url=…&sections=skills
 
 | Package | Responsibility |
 |---|---|
-| `cmd/server` | Wiring, routes, graceful shutdown, request logging |
+| `cmd/server` | Wiring, routes, graceful shutdown, request logging, the self-describing index |
 | `internal/config` | Environment configuration and validation |
 | `internal/handler` | HTTP concerns: parameters, status codes, JSON |
 | `internal/linkedin` | Voyager transport, response parsing, cache |
