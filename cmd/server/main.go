@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -94,26 +95,94 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(`{"status":"ok"}`))
 }
 
+/*
+apiIndex is what GET / returns.
+
+It is deliberately more than a route list. Someone trying this API will
+usually open it in a browser before reading the README, and the behaviour
+here is surprising enough to need explaining on the spot: a 429 is normal and
+expected, not a broken service.
+*/
+type apiIndex struct {
+	Service     string            `json:"service"`
+	Description string            `json:"description"`
+	Source      string            `json:"source"`
+	Endpoints   []endpointDoc     `json:"endpoints"`
+	Example     string            `json:"example"`
+	StatusCodes map[string]string `json:"status_codes"`
+	Notes       []string          `json:"notes"`
+}
+
+type endpointDoc struct {
+	Method      string            `json:"method"`
+	Path        string            `json:"path"`
+	Description string            `json:"description"`
+	Params      map[string]string `json:"params,omitempty"`
+}
+
 // rootHandler documents the API rather than returning a bare 404.
 func rootHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
 	if r.URL.Path != "/" {
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"error":"not found"}`))
 
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	index := apiIndex{
+		Service: "linkedin-profile-api",
+		Description: "Returns a LinkedIn profile as structured JSON by calling " +
+			"LinkedIn's internal Voyager API directly. No browser, no HTML scraping.",
+		Source: "https://github.com/chakradharghali1/linkedin-profile-api",
+		Endpoints: []endpointDoc{
+			{
+				Method:      "GET",
+				Path:        "/api/v1/profile",
+				Description: "Structured profile JSON",
+				Params: map[string]string{
+					"url":      "required. A LinkedIn profile URL, or a bare public identifier",
+					"sections": "optional. Comma-separated: skills, certifications, languages. Each costs one extra upstream request",
+					"full":     "optional. true = all optional sections (4 upstream requests total)",
+				},
+			},
+			{Method: "GET", Path: "/health", Description: "Liveness probe. Does not contact LinkedIn"},
+		},
+		Example: "/api/v1/profile?url=https://www.linkedin.com/in/williamhgates",
+		StatusCodes: map[string]string{
+			"200": "Profile returned. Check the X-Cache header for HIT or MISS",
+			"400": "Missing or malformed profile URL, or an unknown section name",
+			"404": "No such profile, or not visible to the authenticated session",
+			"429": "LinkedIn soft-blocked the request: throttled, or the session cookie expired",
+			"502": "Upstream failure",
+			"504": "Upstream timed out",
+		},
+		Notes: []string{
+			"A 429 is expected behaviour, not an outage. LinkedIn terminates a session " +
+				"after roughly two or three automated requests, so the backing cookie is " +
+				"short-lived by design of their anti-bot system, not by choice.",
+			"Successful responses are cached, so a profile fetched while the session was " +
+				"alive keeps being served afterwards. X-Cache reports HIT or MISS.",
+			"The first request after a period of inactivity can take around 50 seconds. " +
+				"The service runs on a free tier that suspends idle instances; this is a " +
+				"cold start, not a hang.",
+			"partial_sections in a response lists sections that were not fetched from " +
+				"their own endpoint. They may still contain data, capped at about 20 " +
+				"entries, so a short list is never mistaken for a complete one.",
+			"See the repository README and docs/decisions.md for the measurements behind " +
+				"these behaviours.",
+		},
+	}
+
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(`{
-  "service": "linkedin-profile-api",
-  "endpoints": {
-    "GET /health": "liveness probe",
-    "GET /api/v1/profile?url=<linkedin profile url>": "structured profile JSON"
-  },
-  "example": "/api/v1/profile?url=https://www.linkedin.com/in/williamhgates"
-}`))
+
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+
+	if err := encoder.Encode(index); err != nil {
+		log.Printf("write index: %v", err)
+	}
 }
 
 func withRequestLogging(next http.Handler) http.Handler {
