@@ -145,10 +145,17 @@ back-to-back is the fastest way to trip the limiter. See
 | `full` | no | `false` | Shorthand for all three sections |
 
 **Sections are opt-in because upstream requests are the scarce resource.** The
-base lookup is a single Voyager call. Skills, certifications and languages are
-*not* included in it — LinkedIn returns empty stubs pointing at separate
-endpoints — so each one costs an extra request, and `full=true` turns one
-request into four. LinkedIn blocks a session after only a handful.
+base lookup is a single Voyager call, and it usually returns skills,
+certifications and languages already — LinkedIn inlines them, but **caps each
+at roughly 20 entries**. A member with 24 skills yields 20.
+
+How much is inlined varies by who is viewing. For the authenticated member's
+own profile these collections come back populated; for an unconnected member
+they can arrive as empty stubs holding only a pointer. Fetch a section
+explicitly when you need it complete, or when it came back empty.
+
+Either way the affected sections are named in `partial_sections`, so a short
+list is never mistaken for the whole list.
 
 Request just what you need:
 
@@ -163,9 +170,10 @@ curl ".../api/v1/profile?url=<url>&sections=skills"
 curl ".../api/v1/profile?url=<url>&full=true"
 ```
 
-Any section not fetched is listed in `partial_sections`, so an empty `skills`
-array is never ambiguous between "none listed" and "not requested". An
-unknown section name is a `400` rather than a silent omission.
+Any section not fetched from its own endpoint is listed in
+`partial_sections` — including when it holds inlined data, since that data may
+be truncated at ~20 entries. An unknown section name is a `400` rather than a
+silent omission.
 
 Successful responses are cached in memory for 15 minutes and report
 `X-Cache: HIT` or `MISS`. A repeated lookup costs no upstream request at all.
@@ -359,14 +367,16 @@ LinkedIn with a real session:
 | education | ✅ live — school, degree, field of study |
 | profile picture | ✅ live |
 | background image | ✅ real captured response (fixture) |
-| skills | ✅ live — all 24 returned via `?sections=skills` |
-| certifications, languages | ⚠️ parsers written but not exercised live |
+| skills | ✅ live — 20 inlined, all 24 via `?sections=skills` |
+| certifications | ✅ live — name, authority, URL, issue date |
+| languages | ✅ live — name and proficiency |
+| projects, volunteer | ✅ live |
 
-One caveat on skills: the `name` field is confirmed, but every skill on the
-test profile had zero endorsements, so `endorsement_count` returned nothing.
-That is consistent with either a correct field name and no endorsements, or a
-wrong field name — the two are indistinguishable from this data, so treat
-`endorsement_count` as unconfirmed.
+Two fields remain unconfirmed. `endorsement_count` and `license_number`
+returned nothing, because every skill on the test profile had zero
+endorsements and neither certification carried a licence number. A correct
+field name and a wrong one are indistinguishable from that data, so they are
+documented as unverified rather than assumed working.
 
 ---
 

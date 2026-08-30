@@ -41,10 +41,17 @@ type Profile struct {
 	Volunteer      []Volunteer     `json:"volunteer,omitempty"`
 
 	/*
-		Sections that could not be retrieved, for example because a
-		sub-resource call was throttled. Callers can use this to tell
-		"the member has no skills listed" apart from "we failed to
-		read the skills section".
+		Sections that may be incomplete, because they were not fetched from
+		their own endpoint.
+
+		Such a section can still hold data: LinkedIn inlines part of these
+		collections in the profile response, but caps them at roughly 20
+		entries. A member with 24 skills therefore yields 20 here. Fetch the
+		section explicitly (?sections=skills) for the complete list.
+
+		The point is that an empty or short list is never ambiguous between
+		"the member listed nothing", "the list is truncated" and "the fetch
+		failed".
 	*/
 	PartialSections []string `json:"partial_sections,omitempty"`
 

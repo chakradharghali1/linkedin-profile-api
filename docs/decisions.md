@@ -176,12 +176,21 @@ for a service that fits in one container.
 **Decision.** Every section that was skipped or failed is listed in
 `partial_sections`.
 
-**Why.** Without it, `"skills": []` is ambiguous: it could mean the member
-listed no skills, that the section was not requested, or that the request
-failed. Those are very different facts and a caller cannot distinguish them.
+**Why.** Without it, a short `skills` array is ambiguous: it could mean the
+member listed no skills, that the list was truncated, that the section was
+not requested, or that the request failed. Those are very different facts and
+a caller cannot distinguish them.
 
-This matters more than usual here, because skipping sections is the
-*default* behaviour rather than an error path.
+This matters more than usual here, because skipping sections is the *default*
+behaviour rather than an error path — and because LinkedIn **inlines part of
+these collections anyway, capped at roughly 20 entries**. A profile with 24
+skills returns 20 in the base lookup. Without `partial_sections` that
+truncation would be completely invisible: the response looks like a complete
+list of 20.
+
+**Consequence.** A section is listed whenever it was not fetched from its own
+endpoint, *even when it contains data*. The field means "may be incomplete",
+not "is empty".
 
 ---
 
