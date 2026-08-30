@@ -8,13 +8,13 @@
   :root {
     --bg: #ffffff; --fg: #1a1a1a; --muted: #5c5c5c; --line: #e4e4e7;
     --card: #fafafa; --accent: #0a66c2; --code-bg: #f4f4f5;
-    --warn-bg: #fff8e6; --warn-line: #f5c518;
+    --warn-bg: #fff8e6; --warn-line: #f5c518; --warn-fg: #7a5c00;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #0e0e11; --fg: #e8e8ea; --muted: #9b9ba3; --line: #2a2a31;
       --card: #16161a; --accent: #5aa9f0; --code-bg: #1c1c22;
-      --warn-bg: #241f0e; --warn-line: #8a6d1f;
+      --warn-bg: #241f0e; --warn-line: #8a6d1f; --warn-fg: #e3bd57;
     }
   }
   * { box-sizing: border-box; }
@@ -55,6 +55,13 @@
   .note { background: var(--warn-bg); border-left: 3px solid var(--warn-line);
           border-radius: 0 8px 8px 0; padding: .75rem .9rem; margin-bottom: .6rem;
           font-size: .89rem; }
+  /* The headline constraint. Deliberately loud: without it a 429 reads as a
+     broken service, and it is the first thing anyone needs to know. */
+  .alert { background: var(--warn-bg); border: 1px solid var(--warn-line);
+           border-left: 4px solid var(--warn-line); border-radius: 8px;
+           padding: .95rem 1.1rem; margin: 0 0 1.75rem; font-size: .93rem; }
+  .alert strong { display: block; margin-bottom: .3rem; font-size: .8rem;
+                  text-transform: uppercase; letter-spacing: .06em; color: var(--warn-fg); }
   footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line);
            color: var(--muted); font-size: .85rem; }
 </style>
@@ -71,6 +78,16 @@
     <span class="tag">No browser</span>
     <span class="tag">No HTML scraping</span>
   </div>
+
+  {{/* The first note is the headline constraint. It is promoted above the
+       fold because a 429 looks like a broken service until you have read it,
+       and nobody scrolls before clicking Try it. */}}
+  {{with index .Notes 0}}
+  <div class="alert">
+    <strong>Read this first</strong>
+    {{.}}
+  </div>
+  {{end}}
 
   <h2>Try it</h2>
   <div class="try">
@@ -106,7 +123,8 @@
   </div>
 
   <h2>Behaviour worth knowing</h2>
-  {{range .Notes}}
+  {{/* Skip the first note: it is already shown as the banner above. */}}
+  {{range slice .Notes 1}}
   <div class="note">{{.}}</div>
   {{end}}
 
