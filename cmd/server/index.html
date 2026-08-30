@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Service}}</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #5c5c5c; --line: #e4e4e7;
+    --card: #fafafa; --accent: #0a66c2; --code-bg: #f4f4f5;
+    --warn-bg: #fff8e6; --warn-line: #f5c518;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e0e11; --fg: #e8e8ea; --muted: #9b9ba3; --line: #2a2a31;
+      --card: #16161a; --accent: #5aa9f0; --code-bg: #1c1c22;
+      --warn-bg: #241f0e; --warn-line: #8a6d1f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2.5rem 1.25rem 4rem; background: var(--bg); color: var(--fg);
+    font: 15px/1.65 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 .4rem; letter-spacing: -.01em; }
+  h2 { font-size: .82rem; text-transform: uppercase; letter-spacing: .08em;
+       color: var(--muted); margin: 2.5rem 0 .9rem; font-weight: 600; }
+  p { margin: 0 0 1rem; }
+  .lede { color: var(--muted); font-size: 1rem; margin-bottom: 1.25rem; }
+  .tags { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.5rem; }
+  .tag { font-size: .74rem; padding: .2rem .55rem; border: 1px solid var(--line);
+         border-radius: 99px; color: var(--muted); }
+  a { color: var(--accent); }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 1rem 1.1rem; margin-bottom: .75rem; }
+  .ep { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+  .verb { font-size: .7rem; font-weight: 700; letter-spacing: .05em; padding: .15rem .45rem;
+          border-radius: 4px; background: var(--accent); color: #fff; }
+  .path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; }
+  .desc { color: var(--muted); font-size: .9rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  td { padding: .45rem .6rem .45rem 0; border-bottom: 1px solid var(--line);
+       vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.k { white-space: nowrap; color: var(--fg); font-weight: 600;
+         font-family: ui-monospace, SFMono-Regular, Menlo, monospace; width: 1%; padding-right: 1.1rem; }
+  td.v { color: var(--muted); }
+  .try a { display: block; padding: .6rem .8rem; margin-bottom: .4rem; border: 1px solid var(--line);
+           border-radius: 8px; background: var(--code-bg); text-decoration: none;
+           font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem;
+           overflow-wrap: anywhere; }
+  .try a:hover { border-color: var(--accent); }
+  .note { background: var(--warn-bg); border-left: 3px solid var(--warn-line);
+          border-radius: 0 8px 8px 0; padding: .75rem .9rem; margin-bottom: .6rem;
+          font-size: .89rem; }
+  footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line);
+           color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>{{.Service}}</h1>
+  <p class="lede">{{.Description}}</p>
+
+  <div class="tags">
+    <span class="tag">Go</span>
+    <span class="tag">Voyager API</span>
+    <span class="tag">No browser</span>
+    <span class="tag">No HTML scraping</span>
+  </div>
+
+  <h2>Try it</h2>
+  <div class="try">
+    <a href="/health">GET /health</a>
+    <a href="{{.Example}}">GET {{.Example}}</a>
+  </div>
+
+  <h2>Endpoints</h2>
+  {{range .Endpoints}}
+  <div class="card">
+    <div class="ep">
+      <span class="verb">{{.Method}}</span>
+      <span class="path">{{.Path}}</span>
+    </div>
+    <p class="desc" style="margin:.5rem 0 0">{{.Description}}</p>
+    {{if .Params}}
+    <table style="margin-top:.7rem">
+      {{range $name, $doc := .Params}}
+      <tr><td class="k">{{$name}}</td><td class="v">{{$doc}}</td></tr>
+      {{end}}
+    </table>
+    {{end}}
+  </div>
+  {{end}}
+
+  <h2>Status codes</h2>
+  <div class="card">
+    <table>
+      {{range $code, $meaning := .StatusCodes}}
+      <tr><td class="k">{{$code}}</td><td class="v">{{$meaning}}</td></tr>
+      {{end}}
+    </table>
+  </div>
+
+  <h2>Behaviour worth knowing</h2>
+  {{range .Notes}}
+  <div class="note">{{.}}</div>
+  {{end}}
+
+  <footer>
+    Source and full write-up: <a href="{{.Source}}">{{.Source}}</a><br>
+    This page is the HTML rendering of <code>GET /</code>. Request it with
+    <code>Accept: application/json</code> (or via <code>curl</code>) for the JSON form.
+  </footer>
+
+</div>
+</body>
+</html>

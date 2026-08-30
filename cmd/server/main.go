@@ -2,12 +2,17 @@ package main
 
 import (
 	"context"
+	// Blank import: the embed package is only needed for the //go:embed
+	// directive below, not referenced directly.
+	_ "embed"
 	"encoding/json"
 	"errors"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -120,11 +125,26 @@ type endpointDoc struct {
 	Params      map[string]string `json:"params,omitempty"`
 }
 
-// rootHandler documents the API rather than returning a bare 404.
-func rootHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+//go:embed index.html
+var indexHTML string
 
+// Parsed once at startup so a malformed template fails loudly on boot rather
+// than on the first request.
+var indexTemplate = template.Must(template.New("index").Parse(indexHTML))
+
+// prefersHTML reports whether the caller is a browser rather than an API
+// client. Browsers ask for text/html in Accept; curl sends only a wildcard
+// and Go clients usually send nothing, so JSON stays the default for
+// everything programmatic.
+func prefersHTML(r *http.Request) bool {
+	return strings.Contains(r.Header.Get("Accept"), "text/html")
+}
+
+// rootHandler documents the API rather than returning a bare 404. It serves
+// HTML to browsers and JSON to everything else.
+func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"error":"not found"}`))
 
@@ -175,6 +195,18 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	if prefersHTML(r) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+
+		if err := indexTemplate.Execute(w, index); err != nil {
+			log.Printf("render index: %v", err)
+		}
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 
 	encoder := json.NewEncoder(w)
