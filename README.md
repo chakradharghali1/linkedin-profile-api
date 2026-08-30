@@ -269,6 +269,44 @@ request. It is omitted when everything was fetched successfully.
 
 ---
 
+## Trying the hosted API
+
+Worth reading before you try it, because a `429` here is expected behaviour
+rather than a broken service.
+
+**Start with the endpoint that always works.** It needs no LinkedIn access:
+
+```bash
+curl https://linkedin-profile-api-blu9.onrender.com/health
+```
+
+**Then a profile.** Pre-fetched profiles are served from cache and respond
+immediately:
+
+```bash
+curl "https://linkedin-profile-api-blu9.onrender.com/api/v1/profile?url=https://www.linkedin.com/in/chakradhar-ghali"
+```
+
+Check the `X-Cache` header: `HIT` means it was cached, `MISS` means it went
+to LinkedIn live.
+
+**Two things to expect:**
+
+1. **The first request may take ~50 seconds.** The instance is on a free tier
+   and spins down when idle. This is a cold start, not a hang.
+
+2. **An uncached profile may return `429`.** LinkedIn terminates a session
+   after only a few automated requests (measured: two to three), so the
+   backing cookie has a short life. The API reports this honestly instead of
+   pretending to succeed. The full measurements are in
+   [Known limitations](#known-limitations) and
+   [D-005](docs/decisions.md#d-005-do-not-retry-a-soft-block).
+
+The long cache TTL exists precisely for this: a profile fetched while the
+session was alive keeps being served long after the cookie has died.
+
+---
+
 ## Setup
 
 Requires Go 1.24+.
@@ -302,6 +340,7 @@ docker run -p 8080:8080 --env-file .env linkedin-profile-api
 | `LINKEDIN_LI_AT` | yes | — | `li_at` session cookie |
 | `LINKEDIN_JSESSIONID` | yes | — | `JSESSIONID` cookie, **including quotes** |
 | `PORT` | no | `8080` | Listen port |
+| `CACHE_TTL` | no | `6h` | How long a fetched profile is cached (Go duration, e.g. `24h`) |
 
 ---
 

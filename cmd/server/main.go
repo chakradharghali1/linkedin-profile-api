@@ -36,7 +36,7 @@ func main() {
 
 	// Cache lookups so repeated requests for the same profile — a demo, a
 	// page refresh — never spend an upstream request.
-	cache := linkedin.NewCache(15 * time.Minute)
+	cache := linkedin.NewCache(cfg.CacheTTL)
 
 	profileHandler := handler.NewProfileHandler(client, cache)
 

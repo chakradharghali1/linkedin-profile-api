@@ -5,12 +5,23 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
 	Port               string
 	LinkedInLiAt       string
 	LinkedInJSessionID string
+
+	/*
+		How long a fetched profile stays cached.
+
+		This is deliberately long. A LinkedIn session survives only a few
+		automated requests, so a cached profile often outlives the session
+		that fetched it — and serving it is the difference between a working
+		response and a 429.
+	*/
+	CacheTTL time.Duration
 }
 
 func Load() (*Config, error) {
@@ -49,9 +60,25 @@ func Load() (*Config, error) {
 		)
 	}
 
+	cacheTTL := 6 * time.Hour
+
+	if raw := strings.TrimSpace(os.Getenv("CACHE_TTL")); raw != "" {
+		parsed, err := time.ParseDuration(raw)
+		if err != nil {
+			return nil, fmt.Errorf("invalid CACHE_TTL %q: %w", raw, err)
+		}
+
+		if parsed <= 0 {
+			return nil, fmt.Errorf("CACHE_TTL must be positive, got %q", raw)
+		}
+
+		cacheTTL = parsed
+	}
+
 	return &Config{
 		Port:               port,
 		LinkedInLiAt:       liAt,
 		LinkedInJSessionID: jsessionID,
+		CacheTTL:           cacheTTL,
 	}, nil
 }

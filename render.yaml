@@ -10,6 +10,11 @@ services:
     envVars:
       - key: PORT
         value: 8080
+      # A LinkedIn session survives only a few automated requests, so a
+      # cached profile usually outlives the session that fetched it. Holding
+      # results for a day keeps the API answering long after the cookie dies.
+      - key: CACHE_TTL
+        value: 24h
       # sync: false means "prompt me in the dashboard", so the value is
       # never stored in the repository.
       - key: LINKEDIN_LI_AT
