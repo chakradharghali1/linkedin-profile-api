@@ -1,4 +1,6 @@
-FROM golang:1.24-alpine AS builder
+# Must be >= the version in go.mod, or the build fails with
+# "go.mod requires go >= 1.26.3".
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
