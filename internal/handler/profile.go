@@ -204,10 +204,17 @@ func describeError(err error) (int, errorResponse) {
 			Details: "LinkedIn has no profile for this identifier, or it is not visible to the authenticated session",
 		}
 
+	/*
+		LinkedIn answers an expired cookie with the same self-redirect it
+		uses for throttling, so the two cannot be told apart from the
+		response. Name both rather than guess at one.
+	*/
 	case errors.Is(err, linkedin.ErrThrottled):
 		return http.StatusTooManyRequests, errorResponse{
-			Error:   "rate limited by linkedin",
-			Details: "LinkedIn is soft-blocking this session; retry after a short pause",
+			Error: "linkedin refused the request",
+			Details: "LinkedIn responded with a soft block. This means either the session " +
+				"is being throttled, or the configured li_at cookie has expired. " +
+				"Retry shortly; if it persists, the cookie needs replacing.",
 		}
 
 	case errors.Is(err, linkedin.ErrUnauthorized):

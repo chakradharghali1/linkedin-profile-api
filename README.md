@@ -196,8 +196,8 @@ A path form is also supported for convenience:
 | `200` | Profile returned |
 | `400` | Missing or malformed profile URL |
 | `404` | No such profile, or not visible to the authenticated session |
-| `429` | LinkedIn is throttling the session — retry later |
-| `502` | Session cookie rejected or expired, or an upstream failure |
+| `429` | LinkedIn soft-blocked the request: throttled **or** the cookie expired |
+| `502` | Upstream failure |
 | `504` | Upstream timed out |
 
 ---
