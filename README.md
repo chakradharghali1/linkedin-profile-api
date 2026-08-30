@@ -13,6 +13,10 @@ curl "https://<your-deployment>/api/v1/profile?url=https://www.linkedin.com/in/w
 
 ---
 
+> **Deeper documentation:** [docs/architecture.md](docs/architecture.md) for
+> how the pieces fit together, and [docs/decisions.md](docs/decisions.md) for
+> the reasoning behind each design choice and the alternatives rejected.
+
 ## Contents
 
 - [How it works](#how-it-works)
@@ -58,15 +62,19 @@ Three things have to line up, or LinkedIn rejects the call:
 3. `csrf-token` — an HTTP header whose value is the `JSESSIONID` **with the
    quotes stripped**. If it disagrees with the cookie, the request fails.
 
-There is also a bootstrap step. LinkedIn expects the cookies a browser picks
-up on its first page load (`bcookie`, `lidc`, `lang`), so the client fetches
-the homepage once and keeps them in a cookie jar.
+Those two cookies are all that is needed. An earlier version also loaded the
+homepage first to pick up the cookies a browser accumulates (`bcookie`,
+`lidc`), but requests carrying only `li_at` and `JSESSIONID` succeed, so that
+page load was removed — it bought nothing and consumed one of the very few
+requests a session gets.
 
-Order matters here, and it is an easy thing to get wrong: the homepage sets
-its *own anonymous* `JSESSIONID`, and if that is left in the jar it overwrites
-the authenticated one and no longer matches the `csrf-token` header. The
-client therefore bootstraps first and writes the authenticated cookies over
-the top ([`client.go`](internal/linkedin/client.go)).
+The Cookie header is built by hand rather than with `net/http`'s cookie jar.
+A jar keys entries by `(domain, path, name)`, so the host-only `JSESSIONID`
+that linkedin.com sets on a page load is a *different* entry from the
+authenticated one and both get sent. LinkedIn then sees two `JSESSIONID`
+values, the `csrf-token` header matches neither, and every call is soft
+blocked — with no error message explaining why
+([`client.go`](internal/linkedin/client.go)).
 
 ### Parsing the response
 
